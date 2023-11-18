@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  nickName String @map("nick_name")
+  email String? @unique
+  password String?
+  isAdmin  Boolean @default(false) @map("is_admin")
+  createdAt DateTime @map("created_at") @default(now())
+  updatedAt DateTime @map("updated_at") @updatedAt
+  social Social? @relation(fields: [socialId], references: [id])
+  socialId Int? @unique @map("social_id")
+  socialRefreshToken String? @map("social_refresh_token")
+  tasks Task[]
+  items FavoriteMark[]
+
+  @@map("users")
+}
+
+model Social {
+  id Int @id @default(autoincrement())
+  type String
+  createdAt DateTime @map("created_at") @default(now())
+  updatedAt DateTime @map("updated_at") @updatedAt
+  user User? //1:1일 때, nullable 표시를 해줘야 함
+  
+  @@map("socials")
+}
+
+model Item {
+  id Int @id @default(autoincrement())
+  name String
+  thumbnail String
+  description String
+  imgMaxCount Int @map("img_max_count")
+  users FavoriteMark[]
+  links LinkOnItems[]
+  categories CategoryOnItems[]
+  tags TagOnItems[]
+
+  @@map("items")
+}
+
+model LinkOnItems {
+  id Int @id @default(autoincrement())
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  linkId Int @map("link_id")
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  itemId Int @map("item_id")
+
+  @@map("item_links")
+}
+
+model CategoryOnItems {
+  id Int @id @default(autoincrement())
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade )
+  categoryId Int @map("category_id")
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  itemId Int @map("item_id")
+
+  @@map("item_categories")
+}
+
+model TagOnItems {
+  id Int @id @default(autoincrement())
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: Cascade )
+  tagId Int @map("tag_id")
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  itemId Int @map("item_id")
+
+  @@map("item_tags")
+}
+
+model Link {
+  id Int @id @default(autoincrement())
+  type String
+  link String
+  items LinkOnItems[]
+
+  @@map("links")
+}
+
+model Category {
+  id Int @id @default(autoincrement())
+  category String
+  items CategoryOnItems[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id Int @id @default(autoincrement())
+  tag String
+  items TagOnItems[]
+
+  @@map("tags")
+}
+
+model Task {
+  id Int @id @default(autoincrement())
+  type Int
+  status Int
+  message String
+  user User @relation(fields: [userId], references: [id], onUpdate: Cascade)
+  userId Int
+
+  @@map("tasks")
+}
+
+model FavoriteMark {
+  id Int @id @default(autoincrement())  
+  user User @relation(fields: [userId], references: [id])
+  userId Int @map("user_id")
+  item Item @relation(fields: [itemId], references: [id])
+  itemId Int @map("item_id")
+
+  @@map("favorite_marks")
+}
