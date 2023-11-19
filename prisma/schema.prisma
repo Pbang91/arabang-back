@@ -92,7 +92,7 @@ model Link {
 
 model Category {
   id Int @id @default(autoincrement())
-  category String
+  category String @unique
   items CategoryOnItems[]
 
   @@map("categories")
@@ -100,7 +100,7 @@ model Category {
 
 model Tag {
   id Int @id @default(autoincrement())
-  tag String
+  tag String @unique
   items TagOnItems[]
 
   @@map("tags")
