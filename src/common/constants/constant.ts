@@ -21,3 +21,16 @@ export const ITEM_LINK = {
   INSTA: 'instagram',
   SELF: 'self',
 } as const;
+
+export const TASK_STATUS = {
+  COMPLETE: 1,
+  PENDING: 2,
+  IN_PROGRESS: 3,
+  ERROR: 4,
+} as const;
+
+export const TASK_KIND = {
+  SCRAP: 1,
+  PROMOTION: 2,
+  REGIST: 3,
+} as const;

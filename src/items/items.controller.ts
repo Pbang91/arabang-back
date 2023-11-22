@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemsService } from './items.service';
-import { CreateItemDto, GetItemsDto } from './dto/item.dto';
+import { CreateItemDto, GetItemsDto } from './dto/items.dto';
 
 @Controller('items')
 @ApiTags('Item')
@@ -22,6 +22,7 @@ export class ItemsController {
     return await this.itemsService.items(query);
   }
 
+  // TODO: Admin role Guard 추가
   @Post()
   @ApiOperation({
     summary: '업체 생성 API',
