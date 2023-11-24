@@ -1,4 +1,4 @@
-import { PrismaService } from 'src/config/database/prisma.service';
+import { PrismaService } from '../config/database/prisma.service';
 import { ItemsController } from './items.controller';
 import { ItemsService } from './items.service';
 

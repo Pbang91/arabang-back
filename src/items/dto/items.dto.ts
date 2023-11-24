@@ -1,16 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsIn, IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsArray, IsEnum, IsIn, IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
 import { ITEM_CATEGORY, ITEM_LINK, ITEM_TAG } from 'src/common/constants/constant';
 import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
-import { ItemLinks } from '../interfaces/items.type';
+import { ItemLinks } from '../interfaces/items.link.type';
+import { Transform, Type } from 'class-transformer';
 
 export class GetItemsDto {
   @ApiProperty({
     example: 0,
     description: '업체를 불러오기 위한 시작 지점',
     required: false,
-    default: 0,
   })
+  @Type(() => Number)
   @IsNumber()
   readonly limit?: number = 0;
 
@@ -18,8 +19,8 @@ export class GetItemsDto {
     example: 12,
     description: '업체를 불러오기 위한 끝 지점',
     required: false,
-    default: 12,
   })
+  @Type(() => Number)
   @IsNumber()
   readonly offset?: number = 12;
 
@@ -27,30 +28,30 @@ export class GetItemsDto {
     example: 'snap,dress',
     description: '업체 상세 분류. ","로 다중 선택 가능',
     required: false,
-    default: null,
   })
   @IsOptional()
-  @IsIn(Object.values(ITEM_CATEGORY), { each: true })
+  @Transform(({ value }) => value.trim().split(','))
+  @IsEnum(ITEM_CATEGORY, { each: true })
   readonly categories?: ITEM_CATEGORY_TYPE[];
 
   @ApiProperty({
     example: 'emo,luv',
     description: '업체 태그 분류. ","로 다중 선택 가능',
     required: false,
-    default: null,
   })
   @IsOptional()
-  @IsIn(Object.values(ITEM_TAG), { each: true })
+  @Transform(({ value }) => value.trim().split(','))
+  @IsEnum(ITEM_TAG, { each: true })
   readonly tags?: ITEM_TAG_TYPE[];
 
   @ApiProperty({
     example: 'instagram,self',
     description: '업체 사이트 분류. ","로 다중 선택 가능',
     required: false,
-    default: null,
   })
   @IsOptional()
-  @IsIn(Object.values(ITEM_LINK), { each: true })
+  @Transform(({ value }) => value.trim().split(','))
+  @IsEnum(ITEM_LINK, { each: true })
   readonly links?: ITEM_LINK_TYPE[];
 }
 
@@ -88,22 +89,25 @@ export class CreateItemDto {
   readonly imgMaxCount: number;
 
   @ApiProperty({
-    example: '["snap", ...]',
-    description: '해당 업체 카테고리. 여러 개 가능',
-    required: true,
+    example: '["snap","dress"]',
+    description: '업체 상세 분류. ","로 다중 선택 가능',
+    required: false,
     isArray: true,
+    default: null,
   })
+  @IsOptional()
   @IsIn(Object.values(ITEM_CATEGORY), { each: true })
-  readonly categories: ITEM_CATEGORY_TYPE[];
+  readonly categories?: ITEM_CATEGORY_TYPE[];
 
   @ApiProperty({
-    example: '["luv", ...]',
-    description: '해당 업체 태그. 여러 개 가능',
-    required: true,
-    isArray: true,
+    example: '["emo","luv"]',
+    description: '업체 태그 분류. ","로 다중 선택 가능',
+    required: false,
+    default: null,
   })
+  @IsOptional()
   @IsIn(Object.values(ITEM_TAG), { each: true })
-  readonly tags: ITEM_TAG_TYPE[];
+  readonly tags?: ITEM_TAG_TYPE[];
 
   @ApiProperty({
     example: '[{"link": "https://...", "isMain": true, "type": "instagram"}...]',
