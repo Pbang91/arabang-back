@@ -28,6 +28,7 @@ export class ItemsController {
     return await this.itemsService.items(query);
   }
 
+  // TODO: Admin role Guard 추가
   @Post()
   @ApiOperation({
     summary: '업체 생성 API',

@@ -10,7 +10,7 @@ export const setupSwagger = (app: INestApplication) => {
   const swaggerOptions = new DocumentBuilder()
     .setTitle('Arabang API')
     .setDescription('Arabang API 문서입니다.')
-    .setVersion('0.0.1')
+    .setVersion('1.0.0')
     .addBearerAuth()
     .build();
 
