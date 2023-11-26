@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { Category, Item, Prisma, Tag } from '@prisma/client';
 import { PrismaService } from 'src/config/database/prisma.service';
 import { CreateItemDto, GetItemsDto } from './dto/items.dto';
@@ -7,105 +7,119 @@ import { CreateTagDto } from './dto/items.tag.dto';
 import { CategoryOrCondition, LinkOrCondition, TagOrCondition } from './interfaces/items.type';
 import { FindManyItemEntity } from './entities/items.entity';
 import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
+import { customLogger } from 'src/config/api/logger.config';
 
 @Injectable()
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
 
-  async items(params: GetItemsDto): Promise<FindManyItemEntity[]> {
-    const { limit, offset, categories, tags, links } = params;
+  /**
+   * Item List를 전달하는 함수 입니다.
+   *
+   * @param {GetItemsDto} getItemDto limit, offset, categories 등이 포함된 class
+   * @returns {Item[]} Item Array를 반환합니다.
+   */
+  async items(getItemDto: GetItemsDto): Promise<FindManyItemEntity[]> {
+    const { limit, offset, categories, tags, links } = getItemDto;
     const where: Prisma.ItemWhereInput = {};
 
-    if (categories) {
-      const categoryOr: Array<{ category: CategoryOrCondition }> = categories.map((category) => {
-        return {
-          category: {
-            category: category,
+    try {
+      if (categories) {
+        const categoryOr: Array<{ category: CategoryOrCondition }> = categories.map((category) => {
+          return {
+            category: {
+              category: category,
+            },
+          };
+        });
+
+        where.categories = {
+          some: {
+            OR: categoryOr,
           },
+        };
+      }
+
+      if (tags) {
+        const tagOr: Array<{ tag: TagOrCondition }> = tags.map((tag) => {
+          return {
+            tag: {
+              tag: tag,
+            },
+          };
+        });
+
+        where.tags = {
+          some: {
+            OR: tagOr,
+          },
+        };
+      }
+
+      if (links) {
+        const linkCondtion: Array<{ link: LinkOrCondition }> = links.map((link) => {
+          return {
+            link: {
+              type: link,
+            },
+          };
+        });
+
+        where.links = {
+          some: {
+            OR: linkCondtion,
+          },
+        };
+      }
+
+      const findResults = await this.prisma.item.findMany({
+        skip: limit,
+        take: offset,
+        where,
+        include: {
+          categories: {
+            select: {
+              category: true,
+            },
+          },
+          tags: {
+            select: {
+              tag: true,
+            },
+          },
+          links: {
+            select: {
+              link: true,
+            },
+          },
+        },
+      });
+
+      const result = findResults.map((findResult) => {
+        const { id, name, thumbnail, description, imgMaxCount } = findResult;
+        const categories = findResult.categories.map((category) => category.category.category) as ITEM_CATEGORY_TYPE[];
+        const tags = findResult.tags.map((tag) => tag.tag.tag) as ITEM_TAG_TYPE[];
+        const links = findResult.links.map((link) => link.link.type) as ITEM_LINK_TYPE[];
+
+        return {
+          id,
+          name,
+          thumbnail,
+          description,
+          imgMaxCount,
+          categories,
+          tags,
+          links,
         };
       });
 
-      where.categories = {
-        some: {
-          OR: categoryOr,
-        },
-      };
+      return result;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        customLogger.error(e.message);
+        throw new ServiceUnavailableException('잠시 후 다시 시도해주세요.');
+      }
     }
-
-    if (tags) {
-      const tagOr: Array<{ tag: TagOrCondition }> = tags.map((tag) => {
-        return {
-          tag: {
-            tag: tag,
-          },
-        };
-      });
-
-      where.tags = {
-        some: {
-          OR: tagOr,
-        },
-      };
-    }
-
-    if (links) {
-      const linkCondtion: Array<{ link: LinkOrCondition }> = links.map((link) => {
-        return {
-          link: {
-            type: link,
-          },
-        };
-      });
-
-      where.links = {
-        some: {
-          OR: linkCondtion,
-        },
-      };
-    }
-
-    const findResults = await this.prisma.item.findMany({
-      skip: limit,
-      take: offset,
-      where,
-      include: {
-        categories: {
-          select: {
-            category: true,
-          },
-        },
-        tags: {
-          select: {
-            tag: true,
-          },
-        },
-        links: {
-          select: {
-            link: true,
-          },
-        },
-      },
-    });
-
-    const result = findResults.map((findResult) => {
-      const { id, name, thumbnail, description, imgMaxCount } = findResult;
-      const categories = findResult.categories.map((category) => category.category.category) as ITEM_CATEGORY_TYPE[];
-      const tags = findResult.tags.map((tag) => tag.tag.tag) as ITEM_TAG_TYPE[];
-      const links = findResult.links.map((link) => link.link.type) as ITEM_LINK_TYPE[];
-
-      return {
-        id,
-        name,
-        thumbnail,
-        description,
-        imgMaxCount,
-        categories,
-        tags,
-        links,
-      };
-    });
-
-    return result;
   }
 
   async createItem(createItemDto: CreateItemDto): Promise<Item> {
@@ -156,7 +170,12 @@ export class ItemsService {
       },
     };
 
-    return await this.prisma.item.create({ data });
+    try {
+      return await this.prisma.item.create({ data });
+    } catch (e) {
+      customLogger.error(e.message);
+      throw new ServiceUnavailableException('잠시 후 다시 시도해주세요.');
+    }
   }
 
   async createCategory(createCategoryDto: CreateCategoryDto): Promise<Category> {

@@ -5,8 +5,8 @@ import { TASK_STATUS_TYPE, TASK_KIND_TYPE } from 'src/common/constants/enum';
 
 export class GetTaskDto {
   @ApiProperty({
-    example: [1, 2, 3, 4],
-    description: '조회할 태스크의 상태',
+    example: 1,
+    description: '조회할 태스크의 상태.',
     required: false,
     default: 3,
   })
@@ -16,13 +16,13 @@ export class GetTaskDto {
   readonly status?: TASK_STATUS_TYPE;
 
   @ApiProperty({
-    examples: [1, 2, 3],
+    example: 1,
     description: '조회할 태스크의 작업 타입',
     required: false,
   })
   @IsOptional()
   @IsNumber()
-  @IsIn(Object.keys(TASK_KIND))
+  @IsIn(Object.values(TASK_KIND))
   readonly type?: TASK_KIND_TYPE;
 }
 

@@ -5,7 +5,7 @@ import { CreateItemDto, GetItemsDto } from './dto/items.dto';
 import { Category, Item, Link, Tag } from '@prisma/client';
 import { CreateCategoryDto } from './dto/items.category.dto';
 import { CreateTagDto } from './dto/items.tag.dto';
-// TODO: role guard 적용. 실패 케이스 적용.
+// TODO: 실패 케이스 적용.
 describe('ItemsService', () => {
   let itemsService: ItemsService;
 

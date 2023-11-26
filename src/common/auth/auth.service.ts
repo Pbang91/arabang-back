@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { TokenPayload } from './interfaces/auth.type';
 
 @Injectable()
 export class AuthService {
+  constructor(private jwtService: JwtService) {}
+
+  async createJwtToken(id: number, role: number): Promise<string> {
+    const payload: TokenPayload = { id, role };
+
+    return await this.jwtService.signAsync(payload);
+  }
+
   /**
    * 해쉬된 비밀번호를 반환하는 함수 입니다.
    *
@@ -24,5 +34,15 @@ export class AuthService {
    */
   async validatePassword(password: string, dbPassword: string): Promise<boolean> {
     return await bcrypt.compare(password, dbPassword);
+  }
+
+  async validationToken(token: string): Promise<TokenPayload | boolean> {
+    try {
+      const payload: TokenPayload = await this.jwtService.verifyAsync(token, { secret: process.env.JWT_SECRET });
+
+      return payload;
+    } catch {
+      return false;
+    }
   }
 }

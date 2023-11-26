@@ -34,3 +34,13 @@ export const TASK_KIND = {
   PROMOTION: 2,
   REGIST: 3,
 } as const;
+
+export const USER_LOGIN = {
+  EMAIL: 'email',
+  KAKAO: 'kakao',
+} as const;
+
+export const USER_ROLE = {
+  USER: 0,
+  ADMIN: 1,
+} as const;
