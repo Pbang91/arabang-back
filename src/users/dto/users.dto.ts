@@ -1,5 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsString } from 'class-validator';
+import { ApiProperty, PartialType, PickType } from '@nestjs/swagger';
+import { IsBoolean, IsEmail, IsEnum, IsString } from 'class-validator';
+import { USER_LOGIN } from 'src/common/constants/constant';
+import { USER_LOGIN_TYPE } from 'src/common/constants/enum';
 
 export class BaseUserDto {
   @ApiProperty({
@@ -26,4 +28,15 @@ export class BaseUserDto {
   })
   @IsBoolean()
   readonly isAdmin: boolean;
+}
+
+export class LoginUserDto extends PartialType(PickType(BaseUserDto, ['password', 'email'] as const)) {
+  @ApiProperty({
+    example: 'email',
+    examples: Object.values(USER_LOGIN),
+    description: '로그인을 진행하는 종류',
+    required: true,
+  })
+  @IsEnum(USER_LOGIN)
+  readonly type: USER_LOGIN_TYPE;
 }

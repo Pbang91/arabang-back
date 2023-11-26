@@ -90,7 +90,8 @@ export class CreateItemDto {
 
   @ApiProperty({
     example: '["snap","dress"]',
-    description: '업체 상세 분류. ","로 다중 선택 가능',
+    examples: Object.values(ITEM_CATEGORY),
+    description: '업체 상세 분류.',
     required: false,
     isArray: true,
     default: null,
@@ -101,7 +102,8 @@ export class CreateItemDto {
 
   @ApiProperty({
     example: '["emo","luv"]',
-    description: '업체 태그 분류. ","로 다중 선택 가능',
+    examples: Object.values(ITEM_TAG),
+    description: '업체 태그 분류.',
     required: false,
     default: null,
   })

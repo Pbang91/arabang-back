@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemsService } from './items.service';
 import { CreateItemDto, GetItemsDto } from './dto/items.dto';
 import { CreateCategoryDto } from './dto/items.category.dto';
@@ -7,6 +7,10 @@ import { CategoryEntity } from './entities/items.category.entity';
 import { TagEntity } from './entities/items.tag.entity';
 import { CreateTagDto } from './dto/items.tag.dto';
 import { FindManyItemEntity, ItemEntity } from './entities/items.entity';
+import { Roles } from 'src/common/role/role.decorator';
+import { USER_ROLE } from 'src/common/constants/constant';
+import { AuthGuard } from 'src/common/auth/auth.guard';
+import { RoleGuard } from 'src/common/role/role.guard';
 
 @Controller('items')
 @ApiTags('Item')
@@ -28,8 +32,10 @@ export class ItemsController {
     return await this.itemsService.items(query);
   }
 
-  // TODO: Admin role Guard 추가
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(USER_ROLE.ADMIN)
   @ApiOperation({
     summary: '업체 생성 API',
     description: '신규 업체를 등록합니다. 관리자만 가능합니다.',
@@ -42,8 +48,10 @@ export class ItemsController {
     return await this.itemsService.createItem(createItmeDto);
   }
 
-  // TODO: Role guard
-  @Post('/categories')
+  @Post('categories')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(USER_ROLE.ADMIN)
   @ApiOperation({
     summary: '카테고리 생성 API',
     description: '신규 카테고리를 등록합니다. 관리자만 가능합니다.',
@@ -56,7 +64,10 @@ export class ItemsController {
     return await this.itemsService.createCategory(createCategoryDto);
   }
 
-  @Post('/tags')
+  @Post('tags')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(USER_ROLE.ADMIN)
   @ApiOperation({
     summary: '태그 생성 API',
     description: '신규 태그를 등록합니다. 관리자만 가능합니다.',
