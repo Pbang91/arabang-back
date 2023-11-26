@@ -1,27 +1,32 @@
-import { ConflictException, Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { Category, Item, Prisma, Tag } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Category, Item, Link, Prisma, Tag } from '@prisma/client';
 import { PrismaService } from 'src/config/database/prisma.service';
-import { CreateItemDto, GetItemsDto } from './dto/items.dto';
-import { CreateCategoryDto } from './dto/items.category.dto';
-import { CreateTagDto } from './dto/items.tag.dto';
+import { CreateItemDto, GetItemsDto, UpdateItemDto } from './dto/items.dto';
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/items.category.dto';
+import { CreateTagDto, UpdateTagDto } from './dto/items.tag.dto';
 import { CategoryOrCondition, LinkOrCondition, TagOrCondition } from './interfaces/items.type';
-import { FindManyItemEntity } from './entities/items.entity';
+import { FindManyItemEntity, FindOneItemEntity, UpdateLinkOnItemEntity } from './entities/items.entity';
 import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
 import { customLogger } from 'src/config/api/logger.config';
+import { transformJoinValue } from 'src/common/utils/transform';
+import { UpdateLinkDto } from './dto/items.link.dto';
 
 @Injectable()
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Item List를 전달하는 함수 입니다.
+   * Item List를 전달하는 함수입니다.
    *
    * @param {GetItemsDto} getItemDto limit, offset, categories 등이 포함된 class
    * @returns {Item[]} Item Array를 반환합니다.
    */
   async items(getItemDto: GetItemsDto): Promise<FindManyItemEntity[]> {
     const { limit, offset, categories, tags, links } = getItemDto;
-    const where: Prisma.ItemWhereInput = {};
+    const data = {
+      skip: limit,
+      take: offset,
+    };
 
     try {
       if (categories) {
@@ -33,7 +38,7 @@ export class ItemsService {
           };
         });
 
-        where.categories = {
+        data['where']['categories'] = {
           some: {
             OR: categoryOr,
           },
@@ -49,7 +54,7 @@ export class ItemsService {
           };
         });
 
-        where.tags = {
+        data['where']['tags'] = {
           some: {
             OR: tagOr,
           },
@@ -65,7 +70,7 @@ export class ItemsService {
           };
         });
 
-        where.links = {
+        data['where']['links'] = {
           some: {
             OR: linkCondtion,
           },
@@ -73,9 +78,7 @@ export class ItemsService {
       }
 
       const findResults = await this.prisma.item.findMany({
-        skip: limit,
-        take: offset,
-        where,
+        ...data,
         include: {
           categories: {
             select: {
@@ -122,53 +125,139 @@ export class ItemsService {
     }
   }
 
+  /**
+   * Category List를 전달하는 함수입니다.
+   *
+   * @returns {Category[]} Category Array를 반환합니다.
+   */
+  async categories(): Promise<Category[]> {
+    return this.prisma.category.findMany({ orderBy: { id: 'asc' } });
+  }
+
+  /**
+   * Tag List를 전달하는 함수입니다.
+   *
+   * @returns {Tag[]} Tag Array를 반환합니다.
+   */
+  async tags(): Promise<Tag[]> {
+    return this.prisma.tag.findMany({ orderBy: { id: 'asc' } });
+  }
+
+  /**
+   * 특정 Item을 전달하는 함수입니다.
+   *
+   * @param {number} id Item Id
+   * @returns {FindOneItemEntity} Item 정보를 반환합니다.
+   */
+  async findOneItem(id: number): Promise<FindOneItemEntity> {
+    const item = await this.prisma.item.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        categories: {
+          select: {
+            category: true,
+          },
+        },
+        tags: {
+          select: {
+            tag: true,
+          },
+        },
+        links: {
+          select: {
+            link: true,
+          },
+        },
+      },
+    });
+
+    if (item === null) throw new BadRequestException('업체 정보가 없습니다.');
+
+    const result = {
+      ...item,
+    } as unknown as FindOneItemEntity;
+
+    if (result.links) {
+      result.links = await transformJoinValue<{ link: Link }>(item.links);
+    }
+
+    if (result.categories) {
+      result.categories = await transformJoinValue<{ category: Category }>(item.categories);
+    }
+
+    if (result.tags) {
+      result.tags = await transformJoinValue<{ tag: Tag }>(item.tags);
+    }
+
+    return result;
+  }
+
+  /**
+   * Item을 생성하는 함수입니다.
+   *
+   * @param {CreateItemDto} createItemDto name, thumbnail 등이 포함된 class
+   * @returns {Item} 생성된 Item 정보를 반환합니다.
+   */
   async createItem(createItemDto: CreateItemDto): Promise<Item> {
-    const linkCreatCondition = createItemDto.links.map((linkData) => {
-      return {
-        link: {
-          create: {
-            link: linkData.link,
-            type: linkData.type,
-          },
-        },
-      };
-    });
-
-    const categoryCreateCondition = createItemDto.categories.map((category) => {
-      return {
-        category: {
-          connect: {
-            category: category,
-          },
-        },
-      };
-    });
-
-    const tagCreateCondition = createItemDto.tags.map((tag) => {
-      return {
-        tag: {
-          connect: {
-            tag: tag,
-          },
-        },
-      };
-    });
+    const { name, thumbnail, description, imgMaxCount, links, categories, tags } = createItemDto;
 
     const data: Prisma.ItemCreateInput = {
-      name: createItemDto.name,
-      thumbnail: createItemDto.thumbnail,
-      description: createItemDto.description,
-      imgMaxCount: createItemDto.imgMaxCount,
-      links: {
-        create: linkCreatCondition,
-      },
-      categories: {
-        create: categoryCreateCondition,
-      },
-      tags: {
-        create: tagCreateCondition,
-      },
+      name,
+      thumbnail,
+      description,
+      imgMaxCount,
     };
+
+    if (links) {
+      const linkCreateCondition = createItemDto.links.map((linkData) => {
+        return {
+          link: {
+            create: {
+              link: linkData.link,
+              type: linkData.type,
+            },
+          },
+        };
+      });
+
+      data.links = {
+        create: linkCreateCondition,
+      };
+    }
+
+    if (categories) {
+      const categoryCreateCondition = createItemDto.categories.map((category) => {
+        return {
+          category: {
+            connect: {
+              category: category,
+            },
+          },
+        };
+      });
+
+      data.categories = {
+        create: categoryCreateCondition,
+      };
+    }
+
+    if (tags) {
+      const tagCreateCondition = createItemDto.tags.map((tag) => {
+        return {
+          tag: {
+            connect: {
+              tag: tag,
+            },
+          },
+        };
+      });
+
+      data.tags = {
+        create: tagCreateCondition,
+      };
+    }
 
     try {
       return await this.prisma.item.create({ data });
@@ -178,6 +267,12 @@ export class ItemsService {
     }
   }
 
+  /**
+   * Category를 생성하는 함수입니다.
+   *
+   * @param {CreateCategoryDto} createCategoryDto category 이름을 가진 class
+   * @returns {Category} 생성된 Category 정보를 반환합니다.
+   */
   async createCategory(createCategoryDto: CreateCategoryDto): Promise<Category> {
     try {
       return await this.prisma.category.create({
@@ -192,6 +287,12 @@ export class ItemsService {
     }
   }
 
+  /**
+   * Tag를 생성하는 함수입니다.
+   *
+   * @param {CreateTagDto} createTagDto tag 이름을 가진 class
+   * @returns {Tag} 생성된 Tag 정보를 반환합니다.
+   */
   async createTag(createTagDto: CreateTagDto): Promise<Tag> {
     try {
       return await this.prisma.tag.create({
@@ -203,6 +304,104 @@ export class ItemsService {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         if (e.code === 'P2002') throw new ConflictException('중복된 태그 입니다.');
       }
+    }
+  }
+
+  /**
+   * 업체 정보를 수정하는 함수입니다.
+   * @param {number} id Item Id
+   * @param {UpdateItemDto} updateItemDto 수정될 정보를 가지고 있는 class
+   * @returns 수정된 Item 정보
+   */
+  async updateItem(id: number, updateItemDto: UpdateItemDto): Promise<Item> {
+    const { name, thumbnail, description, imgMaxCount } = updateItemDto;
+
+    return await this.prisma.item.update({
+      where: { id },
+      data: {
+        name,
+        thumbnail,
+        description,
+        imgMaxCount,
+      },
+    });
+  }
+
+  /**
+   * 업체 관련 링크 정보를 수정하는 함수입니다.
+   *
+   * @param {number} id Item id
+   * @param {number} linkId Link Id
+   * @param {UpdateLinkDto} updateLinkDto 수정될 정보를 가지고 있는 class
+   * @returns {Link} 수정된 link 정보
+   */
+  async updateLinkonItems(id: number, linkId: number, updateLinkDto: UpdateLinkDto): Promise<Item> {
+    // TODO: Test 진행해야 함.
+    try {
+      await this.prisma.link.update({
+        where: {
+          id: linkId,
+        },
+        data: {
+          ...updateLinkDto,
+        },
+      });
+    } catch (e) {
+      console.log(e);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
+
+    const item = await this.prisma.item.findUnique({
+      where: { id },
+      include: {
+        links: {
+          select: {
+            link: true,
+          },
+        },
+      },
+    });
+
+    if (item === null) throw new BadRequestException('업체 정보가 없습니다.');
+
+    const result = {
+      ...item,
+    } as unknown as UpdateLinkOnItemEntity;
+
+    if (result.links) {
+      result.links = await transformJoinValue<{ link: Link }>(item.links);
+    }
+
+    return item;
+  }
+
+  async updateCategory(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+    // TODO: Test 진행해야 함.
+    try {
+      return await this.prisma.category.update({
+        where: {
+          id,
+        },
+        data: { ...updateCategoryDto },
+      });
+    } catch (e) {
+      console.log(e);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
+  }
+
+  async updateTag(id: number, updateTagDto: UpdateTagDto): Promise<Tag> {
+    // TODO: Test 진행해야 함.
+    try {
+      return await this.prisma.tag.update({
+        where: {
+          id,
+        },
+        data: { ...updateTagDto },
+      });
+    } catch (e) {
+      console.log(e);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
   }
 }
