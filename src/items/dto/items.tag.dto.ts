@@ -14,3 +14,5 @@ export class CreateTagDto {
   @IsIn(Object.values(ITEM_TAG))
   readonly tag: ITEM_TAG_TYPE;
 }
+
+export class UpdateTagDto extends CreateTagDto {}

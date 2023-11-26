@@ -14,3 +14,5 @@ export class CreateCategoryDto {
   @IsIn(Object.values(ITEM_CATEGORY))
   readonly category: ITEM_CATEGORY_TYPE;
 }
+
+export class UpdateCategoryDto extends CreateCategoryDto {}

@@ -2,6 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Item } from '@prisma/client';
 import { ITEM_CATEGORY, ITEM_LINK, ITEM_TAG } from 'src/common/constants/constant';
 import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
+import { CategoryEntity } from './items.category.entity';
+import { TagEntity } from './items.tag.entity';
+import { LinkEntity } from './items.link.entity';
 
 export class ItemEntity implements Item {
   @ApiProperty({
@@ -57,3 +60,28 @@ export class FindManyItemEntity extends ItemEntity {
   })
   links: ITEM_LINK_TYPE[];
 }
+
+export class FindOneItemEntity extends ItemEntity {
+  @ApiProperty({
+    type: CategoryEntity,
+    description: 'Corp Category',
+    isArray: true,
+  })
+  categories?: CategoryEntity[];
+
+  @ApiProperty({
+    type: TagEntity,
+    description: 'Corp Tag',
+    isArray: true,
+  })
+  tags?: TagEntity[];
+
+  @ApiProperty({
+    type: LinkEntity,
+    description: 'Corp Link Data',
+    isArray: true,
+  })
+  links?: LinkEntity[];
+}
+
+export class UpdateLinkOnItemEntity extends FindOneItemEntity {}

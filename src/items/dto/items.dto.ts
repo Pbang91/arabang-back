@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType, PickType } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsIn, IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
 import { ITEM_CATEGORY, ITEM_LINK, ITEM_TAG } from 'src/common/constants/constant';
 import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
@@ -120,3 +120,10 @@ export class CreateItemDto {
   @IsArray()
   readonly links: ItemLinks[];
 }
+
+export class UpdateItemDto extends PickType(CreateItemDto, [
+  'name',
+  'thumbnail',
+  'description',
+  'imgMaxCount',
+] as const) {}
