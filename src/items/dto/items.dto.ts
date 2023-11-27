@@ -121,9 +121,6 @@ export class CreateItemDto {
   readonly links: ItemLinks[];
 }
 
-export class UpdateItemDto extends PickType(CreateItemDto, [
-  'name',
-  'thumbnail',
-  'description',
-  'imgMaxCount',
-] as const) {}
+export class UpdateItemDto extends PartialType(
+  PickType(CreateItemDto, ['name', 'thumbnail', 'description', 'imgMaxCount'] as const),
+) {}

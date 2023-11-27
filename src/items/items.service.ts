@@ -23,10 +23,12 @@ export class ItemsService {
    */
   async items(getItemDto: GetItemsDto): Promise<FindManyItemEntity[]> {
     const { limit, offset, categories, tags, links } = getItemDto;
-    const data = {
+    const data: { skip: number; take: number; where?: Prisma.ItemWhereInput } = {
       skip: limit,
       take: offset,
     };
+
+    const where: Prisma.ItemWhereInput = {};
 
     try {
       if (categories) {
@@ -38,7 +40,7 @@ export class ItemsService {
           };
         });
 
-        data['where']['categories'] = {
+        where.categories = {
           some: {
             OR: categoryOr,
           },
@@ -54,7 +56,7 @@ export class ItemsService {
           };
         });
 
-        data['where']['tags'] = {
+        where.tags = {
           some: {
             OR: tagOr,
           },
@@ -70,11 +72,15 @@ export class ItemsService {
           };
         });
 
-        data['where']['links'] = {
+        where.links = {
           some: {
             OR: linkCondtion,
           },
         };
+      }
+
+      if (Object.values(where).length > 0) {
+        data.where = where;
       }
 
       const findResults = await this.prisma.item.findMany({
@@ -118,10 +124,9 @@ export class ItemsService {
 
       return result;
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        customLogger.error(e.message);
-        throw new ServiceUnavailableException('잠시 후 다시 시도해주세요.');
-      }
+      customLogger.error(e.message);
+
+      throw new ServiceUnavailableException('잠시 후 다시 시도해주세요.');
     }
   }
 
@@ -309,21 +314,21 @@ export class ItemsService {
 
   /**
    * 업체 정보를 수정하는 함수입니다.
+   *
    * @param {number} id Item Id
    * @param {UpdateItemDto} updateItemDto 수정될 정보를 가지고 있는 class
    * @returns 수정된 Item 정보
    */
   async updateItem(id: number, updateItemDto: UpdateItemDto): Promise<Item> {
-    const { name, thumbnail, description, imgMaxCount } = updateItemDto;
+    const data: Prisma.ItemUpdateInput = {};
+
+    Object.entries(updateItemDto).forEach(([key, value]) => {
+      data[key] = value;
+    });
 
     return await this.prisma.item.update({
       where: { id },
-      data: {
-        name,
-        thumbnail,
-        description,
-        imgMaxCount,
-      },
+      data,
     });
   }
 
@@ -333,10 +338,9 @@ export class ItemsService {
    * @param {number} id Item id
    * @param {number} linkId Link Id
    * @param {UpdateLinkDto} updateLinkDto 수정될 정보를 가지고 있는 class
-   * @returns {Link} 수정된 link 정보
+   * @returns {FindOneItemEntity} 수정된 Item 정보
    */
-  async updateLinkonItems(id: number, linkId: number, updateLinkDto: UpdateLinkDto): Promise<Item> {
-    // TODO: Test 진행해야 함.
+  async updateLinkOnItem(id: number, linkId: number, updateLinkDto: UpdateLinkDto): Promise<FindOneItemEntity> {
     try {
       await this.prisma.link.update({
         where: {
@@ -347,7 +351,7 @@ export class ItemsService {
         },
       });
     } catch (e) {
-      console.log(e);
+      customLogger.error(e.message);
       throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
 
@@ -372,7 +376,7 @@ export class ItemsService {
       result.links = await transformJoinValue<{ link: Link }>(item.links);
     }
 
-    return item;
+    return result;
   }
 
   async updateCategory(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {

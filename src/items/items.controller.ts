@@ -37,8 +37,8 @@ export class ItemsController {
     type: FindManyItemEntity,
     status: 200,
   })
-  async getItems(@Query() query: GetItemsDto) {
-    return await this.itemsService.items(query);
+  async getItems(@Query() getItemsDto: GetItemsDto) {
+    return await this.itemsService.items(getItemsDto);
   }
 
   @Get('categories')
@@ -168,7 +168,7 @@ export class ItemsController {
     @Param('linkId') linkId: number,
     @Body() updateLinkDto: UpdateLinkDto,
   ) {
-    return await this.itemsService.updateLinkonItems(id, linkId, updateLinkDto);
+    return await this.itemsService.updateLinkOnItem(id, linkId, updateLinkDto);
   }
 
   @Put('categories/:id')
