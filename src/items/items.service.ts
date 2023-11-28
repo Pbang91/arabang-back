@@ -124,9 +124,14 @@ export class ItemsService {
 
       return result;
     } catch (e) {
-      customLogger.error(e.message);
+      let message = e.message;
 
-      throw new ServiceUnavailableException('잠시 후 다시 시도해주세요.');
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
   }
 
@@ -145,7 +150,18 @@ export class ItemsService {
    * @returns {Tag[]} Tag Array를 반환합니다.
    */
   async tags(): Promise<Tag[]> {
-    return this.prisma.tag.findMany({ orderBy: { id: 'asc' } });
+    try {
+      return this.prisma.tag.findMany({ orderBy: { id: 'asc' } });
+    } catch (e) {
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
   }
 
   /**
@@ -267,7 +283,14 @@ export class ItemsService {
     try {
       return await this.prisma.item.create({ data });
     } catch (e) {
-      customLogger.error(e.message);
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+
       throw new ServiceUnavailableException('잠시 후 다시 시도해주세요.');
     }
   }
@@ -286,9 +309,16 @@ export class ItemsService {
         },
       });
     } catch (e) {
+      let message = e.message;
+
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         if (e.code === 'P2002') throw new ConflictException('중복된 카테고리 입니다.');
+
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
       }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
   }
 
@@ -306,9 +336,16 @@ export class ItemsService {
         },
       });
     } catch (e) {
+      let message = e.message;
+
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         if (e.code === 'P2002') throw new ConflictException('중복된 태그 입니다.');
+
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
       }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
   }
 
@@ -326,10 +363,23 @@ export class ItemsService {
       data[key] = value;
     });
 
-    return await this.prisma.item.update({
-      where: { id },
-      data,
-    });
+    try {
+      return await this.prisma.item.update({
+        where: { id },
+        data,
+      });
+    } catch (e) {
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025') throw new BadRequestException('업체 정보가 없습니다.');
+
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
   }
 
   /**
@@ -351,7 +401,15 @@ export class ItemsService {
         },
       });
     } catch (e) {
-      customLogger.error(e.message);
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025') throw new BadRequestException('링크 정보가 없습니다.');
+
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
       throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
 
@@ -379,8 +437,14 @@ export class ItemsService {
     return result;
   }
 
+  /**
+   * 카테고리 정보를 수정하는 함수입니다.
+   *
+   * @param {number} id Category Id
+   * @param {UpdateCategoryDto} updateCategoryDto 수정될 정보를 가지고 있는 class
+   * @returns {Category} 변경된 카테고리
+   */
   async updateCategory(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
-    // TODO: Test 진행해야 함.
     try {
       return await this.prisma.category.update({
         where: {
@@ -389,13 +453,28 @@ export class ItemsService {
         data: { ...updateCategoryDto },
       });
     } catch (e) {
-      console.log(e);
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2002') throw new ConflictException('중복된 카테고리 입니다.');
+        if (e.code === 'P2025') throw new BadRequestException('카테고리 정보가 없습니다.');
+
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
       throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
   }
 
+  /**
+   * 태그 정보를 수정하는 함수입니다.
+   *
+   * @param {number} id Tag Id
+   * @param {UpdateTagDto} updateTagDto 수정될 정보를 가지고 있는 class
+   * @returns {Tag} 변경된 태그
+   */
   async updateTag(id: number, updateTagDto: UpdateTagDto): Promise<Tag> {
-    // TODO: Test 진행해야 함.
     try {
       return await this.prisma.tag.update({
         where: {
@@ -404,7 +483,79 @@ export class ItemsService {
         data: { ...updateTagDto },
       });
     } catch (e) {
-      console.log(e);
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2002') throw new ConflictException('중복된 태그 입니다.');
+        if (e.code === 'P2025') throw new BadRequestException('태그 정보가 없습니다.');
+
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
+  }
+  // TODO: Delete 관련 기능 Task쪽으로 뺄지 고민.
+  /**
+   * Item을 삭제하는 함수입니다.
+   *
+   * @param {number} id Item Id
+   */
+  async removeItem(id: number): Promise<void> {
+    try {
+      const deleteItem = this.prisma.item.delete({ where: { id } });
+      await this.prisma.$transaction([deleteItem]);
+    } catch (e) {
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
+  }
+
+  /**
+   * 카테고리를 삭제하는 함수입니다.
+   *
+   * @param {number} id Category Id
+   */
+  async removeCategory(id: number): Promise<void> {
+    try {
+      const deleteCategory = this.prisma.category.delete({ where: { id } });
+      await this.prisma.$transaction([deleteCategory]);
+    } catch (e) {
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
+      throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
+    }
+  }
+
+  /**
+   * 태그를 삭제하는 함수입니다.
+   *
+   * @param {number} id Tag Id
+   */
+  async removeTag(id: number): Promise<void> {
+    try {
+      const deleteTag = this.prisma.tag.delete({ where: { id } });
+      await this.prisma.$transaction([deleteTag]);
+    } catch (e) {
+      let message = e.message;
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        message = `code: ${e.code}, cause: ${e.meta.cause}`;
+      }
+
+      customLogger.error(message);
       throw new ServiceUnavailableException('확인되지 않은 오류입니다. 잠시 후 다시 시도해주세요');
     }
   }

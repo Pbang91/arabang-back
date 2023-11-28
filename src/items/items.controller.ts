@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -203,5 +204,47 @@ export class ItemsController {
   })
   async updateTag(@Param('id') id: number, @Body() updateTagDto: UpdateTagDto) {
     return await this.itemsService.updateTag(id, updateTagDto);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(USER_ROLE.ADMIN)
+  @ApiOperation({
+    summary: '업체 삭제 API',
+    description: '업체의 정보를 삭제합니다. 관리자만 가능합니다.',
+  })
+  @ApiParam({ name: 'id', required: true, description: 'Item Id' })
+  @ApiNoContentResponse()
+  async removeItem(@Param('id') id: number) {
+    await this.itemsService.removeItem(id);
+  }
+
+  @Delete('categories/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(USER_ROLE.ADMIN)
+  @ApiOperation({
+    summary: '카테고리 삭제 API',
+    description: '카테고리 정보를 삭제합니다. 관리자만 가능합니다.',
+  })
+  @ApiParam({ name: 'id', required: true, description: 'Category Id' })
+  @ApiNoContentResponse()
+  async removeCategory(@Param('id') id: number) {
+    await this.itemsService.removeCategory(id);
+  }
+
+  @Delete('tags/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(USER_ROLE.ADMIN)
+  @ApiOperation({
+    summary: '태그 삭제 API',
+    description: '태그 정보를 삭제합니다. 관리자만 가능합니다.',
+  })
+  @ApiParam({ name: 'id', required: true, description: 'Category Id' })
+  @ApiNoContentResponse()
+  async removeTag(@Param('id') id: number) {
+    await this.itemsService.removeTag(id);
   }
 }

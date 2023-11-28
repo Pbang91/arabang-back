@@ -1,3 +1,5 @@
+import { ConflictException } from '@nestjs/common';
+
 export const ITEM_CATEGORY = {
   SNAP: 'snap',
   HALL: 'hall',
