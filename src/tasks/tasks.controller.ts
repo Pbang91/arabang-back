@@ -5,7 +5,7 @@ import { GetTaskDto, RegistTaskDto } from './dto/tasks.dto';
 import { TaskEntity } from './entities/tasks.entity';
 
 // TODO: Admin Role guard
-@Controller()
+@Controller('tasks')
 @ApiTags('Task')
 export class TasksController {
   constructor(private tasksService: TasksService) {}

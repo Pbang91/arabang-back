@@ -5,6 +5,7 @@ import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/co
 import { CategoryEntity } from './items.category.entity';
 import { TagEntity } from './items.tag.entity';
 import { LinkEntity } from './items.link.entity';
+import { TransformLinks } from '../interfaces/items.link.type';
 
 export class ItemEntity implements Item {
   @ApiProperty({
@@ -36,6 +37,9 @@ export class ItemEntity implements Item {
     description: 'Corp Images',
   })
   imgMaxCount: number;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class FindManyItemEntity extends ItemEntity {
@@ -54,11 +58,10 @@ export class FindManyItemEntity extends ItemEntity {
   tags: ITEM_TAG_TYPE[];
 
   @ApiProperty({
-    example: "['instagram', ...]",
-    examples: Object.values(ITEM_LINK),
+    example: "[{'type': 'instagram', 'link': 'https://..', ...}, ...]",
     description: 'Corp Site Link',
   })
-  links: ITEM_LINK_TYPE[];
+  links: TransformLinks[];
 }
 
 export class FindOneItemEntity extends ItemEntity {

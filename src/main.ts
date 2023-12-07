@@ -15,7 +15,9 @@ async function bootstrap() {
     }),
   );
 
+  app.setGlobalPrefix('api');
+  app.enableCors();
   setupSwagger(app);
-  await app.listen(3000);
+  await app.listen(5080);
 }
 bootstrap();

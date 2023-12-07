@@ -5,3 +5,8 @@ export interface ItemLinks {
   isMain: boolean;
   type: ITEM_LINK_TYPE;
 }
+
+export interface TransformLinks {
+  type: ITEM_LINK_TYPE;
+  link: string;
+}

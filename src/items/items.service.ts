@@ -6,14 +6,16 @@ import { CreateCategoryDto, UpdateCategoryDto } from './dto/items.category.dto';
 import { CreateTagDto, UpdateTagDto } from './dto/items.tag.dto';
 import { CategoryOrCondition, LinkOrCondition, TagOrCondition } from './interfaces/items.type';
 import { FindManyItemEntity, FindOneItemEntity, UpdateLinkOnItemEntity } from './entities/items.entity';
-import { ITEM_CATEGORY_TYPE, ITEM_LINK_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
+import { ITEM_CATEGORY_TYPE, ITEM_TAG_TYPE } from 'src/common/constants/enum';
 import { customLogger } from 'src/config/api/logger.config';
 import { transformJoinValue } from 'src/common/utils/transform';
 import { UpdateLinkDto } from './dto/items.link.dto';
+import { TransformLinks } from './interfaces/items.link.type';
+import { S3Service } from 'src/config/provider/s3/s3.service';
 
 @Injectable()
 export class ItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private s3Service: S3Service) {}
 
   /**
    * Item List를 전달하는 함수입니다.
@@ -83,7 +85,7 @@ export class ItemsService {
         data.where = where;
       }
 
-      const findResults = await this.prisma.item.findMany({
+      const findItems = await this.prisma.item.findMany({
         ...data,
         include: {
           categories: {
@@ -104,13 +106,21 @@ export class ItemsService {
         },
       });
 
-      const result = findResults.map((findResult) => {
-        const { id, name, thumbnail, description, imgMaxCount } = findResult;
-        const categories = findResult.categories.map((category) => category.category.category) as ITEM_CATEGORY_TYPE[];
-        const tags = findResult.tags.map((tag) => tag.tag.tag) as ITEM_TAG_TYPE[];
-        const links = findResult.links.map((link) => link.link.type) as ITEM_LINK_TYPE[];
+      const result: FindManyItemEntity[] = [];
 
-        return {
+      for (const findItem of findItems) {
+        const { id, name, description, imgMaxCount, createdAt, updatedAt } = findItem;
+        const categories = findItem.categories.map((category) => category.category.category) as ITEM_CATEGORY_TYPE[];
+        const tags = findItem.tags.map((tag) => tag.tag.tag) as ITEM_TAG_TYPE[];
+        const links = findItem.links.map((link) => ({
+          type: link.link.type,
+          link: link.link.link,
+        })) as TransformLinks[];
+
+        const extractedKey = findItem.thumbnail.split('.com/')[1];
+        const thumbnail = (await this.s3Service.generatePresignedUrl(extractedKey)) as string;
+
+        result.push({
           id,
           name,
           thumbnail,
@@ -119,8 +129,10 @@ export class ItemsService {
           categories,
           tags,
           links,
-        };
-      });
+          createdAt,
+          updatedAt,
+        });
+      }
 
       return result;
     } catch (e) {
