@@ -16,7 +16,9 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api');
-  app.enableCors();
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:5080'],
+  });
   setupSwagger(app);
   await app.listen(5080);
 }

@@ -1,9 +1,7 @@
-import { ConflictException } from '@nestjs/common';
-
 export const ITEM_CATEGORY = {
   SNAP: 'snap',
   HALL: 'hall',
-  H_M: 'h_m',
+  H_M: 'hair&makeup',
   DRESS: 'dress',
   SUIT: 'suit',
   STUDIO: 'studio',

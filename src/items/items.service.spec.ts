@@ -21,7 +21,7 @@ describe('ItemsService', () => {
     },
     {
       id: 3,
-      category: 'h_m',
+      category: 'hair&makeup',
     },
   ];
 
@@ -51,6 +51,8 @@ describe('ItemsService', () => {
       thumbnail: 'https://www.test.com/1.jpg',
       imgMaxCount: 4,
       description: '테스트 1 업체입니다',
+      createdAt: new Date(Date.now()),
+      updatedAt: new Date(Date.now()),
     },
     {
       id: 2,
@@ -58,6 +60,8 @@ describe('ItemsService', () => {
       thumbnail: 'https://www.test.com/2.jpg',
       imgMaxCount: 3,
       description: '테스트 2 업체입니다',
+      createdAt: new Date(Date.now()),
+      updatedAt: new Date(Date.now()),
     },
   ];
 
